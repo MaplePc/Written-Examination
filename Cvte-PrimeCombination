@@ -1,0 +1,272 @@
+Cvte 2018-3-10 Web后台实习
+题目大意: 求一个整数的由三个素数组成的排列的种数.
+输入: 10
+输出: 6
+解析: 一共有[2, 3, 5], [2, 5, 3], [3, 2, 5], [3, 5, 2], [5, 2, 3], [5, 3, 2]这6种
+
+对题目的理解和分析:
+如果仅仅暴力地把能够构成这个整数的所有组合列举出来并验证是否三个数都是素数, 那么复杂度将是O(n3),而且有大量的组合并不都是素数
+为了提高效率, 可以先把符合条件的素数都计算并存储起来,然后仅仅是在这些素数中选择三者之和等于该整数的组合;
+还有一点需要注意的是, 如果有两个数确定, 那么第三个数也确定了, 这就指明了需要用到HashSet来查找第三个数是否存在,
+这样就可以把O(n3)的遍历变为O(n2)的遍历
+===============================================
+package leetcode;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+public class PrimeNumberCombination {
+
+	public static void main(String[] args) {
+
+		//使用[100,5000)来保证准确性
+		//使用[70000, 71000)来查看运行效率
+		//		for (int i = 100; i < 5000; i++) {
+		for (int i = 70000; i < 71000; i++) {
+			long start = 0;
+
+			//			start = System.currentTimeMillis();
+			//			int v = solution(i); //仅仅迭代HashSet
+			//			System.out.println("s = " + (System.currentTimeMillis() - start));
+
+			start = System.currentTimeMillis();
+			int v1 = solution_1(i); //使用了HashSet,转为Array后排序
+			System.out.println("s1 = " + (System.currentTimeMillis() - start));
+
+			start = System.currentTimeMillis();
+			int v2 = solution_2(i); //使用了HashSet,转为Array后排序, 避免遍历一些不可能的组合, 时间缩短30%~50%
+			System.out.println("s2 = " + (System.currentTimeMillis() - start));
+
+			start = System.currentTimeMillis();
+			int v3 = solution_3(i); //使用HashSet和ArrayList来共同记录素数, 空间复杂度变高了, 操作也复杂了, 效率并没有明显改善
+			System.out.println("s3 = " + (System.currentTimeMillis() - start));
+			
+			start = System.currentTimeMillis();
+			int v4 = solution_4(i); //使用LinkedHashSet记录素数, 
+			System.out.println("s4 = " + (System.currentTimeMillis() - start));
+
+			//			if (v1 != v || v2 != v || v3 != v) {
+			//				throw new RuntimeException("Error, i = " + i + ", v = " + v + ", v1 = " + v1 + ", v2 = " + v2);
+			//			}
+
+			if (v2 != v1 || v3 != v1 || v4 != v1) {
+				throw new RuntimeException("Error, i = " + i + ", v1 = " + v1 + ", v2 = " + v2 
+						+ ", v3 = " + v3 + ", v4 = " + v4);
+			}
+			System.out.println();
+		}
+		System.out.println("算法成功结束");
+
+	}
+
+	public static int solution(final int num) {
+		if (num < 6) {
+			return 0;
+		}
+
+		Set<Integer> primes = new HashSet<>(num / 2);
+		int right = num - 4;
+		for (int i = 2; i <= right; i++) {
+			if (isPrimeNumber(i)) {
+				primes.add(i);
+			}
+		}
+
+		int count = 0;
+		for (Iterator<Integer> iter1 = primes.iterator(); iter1.hasNext();) {
+			int v = iter1.next();
+			for (Iterator<Integer> iter2 = primes.iterator(); iter2.hasNext();) {
+				int v2 = iter2.next();
+				if (primes.contains(num - v - v2)) {
+					count++;
+					System.out.println(v + " " + v2 + " " + (num - v - v2));
+				}
+			}
+		}
+		return count;
+	}
+
+	public static int solution_1(final int num) {
+		if (num < 6) {
+			return 0;
+		}
+
+		Set<Integer> primes = new HashSet<>(num / 2);
+		int right = num - 4;
+		for (int i = 2; i <= right; i++) {
+			if (isPrimeNumber(i)) {
+				primes.add(i);
+			}
+		}
+
+		int count = 0;
+		Integer[] pArr = new Integer[0];
+		pArr = primes.toArray(pArr);
+		Arrays.sort(pArr); //快排
+
+		for (int i = 0; i < pArr.length; i++) {
+			for (int j = i; j < pArr.length; j++) {
+				int third = num - pArr[i] - pArr[j];
+				if (third < pArr[j]) {
+					continue;
+				}
+				//pArr[i] <= pArr[j] <= third
+				if (primes.contains(third)) {
+					if (pArr[i] == pArr[j] && pArr[i] == third) {
+						count++;
+					} else if (pArr[i] == pArr[j] || pArr[i] == third) {
+						count += 3;
+					} else if (pArr[j] == third) {
+						count += 3;
+					} else {
+						count += 6;
+					}
+				}
+			}
+		}
+		return count;
+	}
+
+	public static int solution_2(final int num) {
+		if (num < 6) {
+			return 0;
+		}
+
+		Set<Integer> primes = new HashSet<>(num / 2);
+		int right = num - 4;
+		for (int i = 2; i <= right; i++) {
+			if (isPrimeNumber(i)) {
+				primes.add(i);
+			}
+		}
+
+		int count = 0;
+		Integer[] pArr = new Integer[0];
+		pArr = primes.toArray(pArr);
+		Arrays.sort(pArr); //快排
+
+		for (int i = 0; i < pArr.length; i++) {
+			for (int j = i; j < pArr.length && (pArr[i] + pArr[j] + pArr[j] <= num); j++) {
+				int third = num - pArr[i] - pArr[j];
+				if (third < pArr[j]) {
+					continue;
+				}
+				//pArr[i] <= pArr[j] <= third
+				if (primes.contains(third)) {
+					if (pArr[i] == pArr[j] && pArr[i] == third) {
+						count++;
+					} else if (pArr[i] == pArr[j] || pArr[i] == third) {
+						count += 3;
+					} else if (pArr[j] == third) {
+						count += 3;
+					} else {
+						count += 6;
+					}
+				}
+			}
+		}
+		return count;
+	}
+
+	public static int solution_3(final int num) {
+		if (num < 6) {
+			return 0;
+		}
+
+		//这里使用一个ArrayList按升序保存了比num至少小4的素数
+		List<Integer> pList = new ArrayList<>(num / 2);
+		Set<Integer> pSet = new HashSet<>(num / 2);
+		int right = num - 4;
+		for (int i = 2; i <= right; i++) {
+			if (isPrimeNumber(i)) {
+				pSet.add(i);
+				pList.add(i);
+			}
+		}
+
+		int count = 0;
+		for (int i = 0; i < pList.size(); i++) {
+			//(pList.get(i) + pList.get(j) < num)对于算法的提升也是O(n2)
+			for (int j = i; j < pList.size() && (pList.get(i) + pList.get(j) + pList.get(j) <= num); j++) {
+				int third = num - pList.get(i) - pList.get(j);
+				if (third < pList.get(j)) { //避免重复计算导致的错误
+					continue;
+				}
+
+				//pList.get(i) <= pList.get(j) <= third
+				if (pSet.contains(third)) {
+					if (pList.get(i) == pList.get(j) && pList.get(i) == third) {
+						count++;
+					} else if (pList.get(i) == pList.get(j) || pList.get(i) == third) {
+						count += 3;
+					} else if (pList.get(j) == third) {
+						count += 3;
+					} else {
+						count += 6;
+					}
+				}
+			}
+		}
+		return count;
+	}
+
+	public static int solution_4(final int num) {
+		if (num < 6) {
+			return 0;
+		}
+
+		//这里使用一个LinkedHashSet按插入顺序保存了比num至少小4的素数
+		Set<Integer> pSet = new LinkedHashSet<>(num / 2);
+		int right = num - 4;
+		for (int i = 2; i <= right; i++) {
+			if (isPrimeNumber(i)) {
+				pSet.add(i);
+			}
+		}
+		Integer[] pArr = new Integer[0];
+		pArr = pSet.toArray(pArr);
+
+		int count = 0;
+		for (int i = 0; i < pArr.length; i++) {
+			//(pArr[i] + pArr[j] < num)对于算法的提升也是O(n2)
+			for (int j = i; j < pArr.length && (pArr[i] + pArr[j] + pArr[j] <= num); j++) {
+				int third = num - pArr[i] - pArr[j];
+				if (third < pArr[j]) { //避免重复计算导致的错误
+					continue;
+				}
+
+				//pArr[i] <= pArr[j] <= third
+				if (pSet.contains(third)) {
+					if (pArr[i] == pArr[j] && pArr[i] == third) {
+						count++;
+					} else if (pArr[i] == pArr[j] || pArr[i] == third) {
+						count += 3;
+					} else if (pArr[j] == third) {
+						count += 3;
+					} else {
+						count += 6;
+					}
+				}
+			}
+		}
+		return count;
+	}
+
+	public static boolean isPrimeNumber(final int num) {
+		if (num < 2) {
+			return false;
+		}
+		for (int i = 2; i * i <= num; i++) {
+			if (num % i == 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+}
+//运行效率对比: solution_2 > solution_4 > solution_3 > solution_1
